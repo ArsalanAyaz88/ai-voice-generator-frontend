@@ -44,7 +44,7 @@ export default function Home() {
   const [audioDuration, setAudioDuration] = useState<number | null>(null);
   const [synthError, setSynthError] = useState<string | null>(null);
   const [recentVoices, setRecentVoices] = useState<string[]>([]);
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [theme, setTheme] = useState<"light" | "dark">("dark");
   const isDark = theme === "dark";
   const baseTextClass = isDark ? "text-white" : "text-black";
   const mutedTextClass = isDark ? "text-white/70" : "text-black/60";
@@ -423,9 +423,7 @@ export default function Home() {
                           onClick={() => setSelectedVoice(voice.name)}
                           className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm font-medium transition ${
                             selectedVoice === voice.name
-                              ? isDark
-                                ? "border-amber-500 bg-amber-500 text-zinc-900"
-                                : "border-zinc-900 bg-zinc-900 text-white"
+                              ? "border-amber-500 bg-amber-500 text-black"
                               : isDark
                               ? "border-white/20 bg-white/5 text-white hover:border-white/40"
                               : "border-transparent bg-zinc-50 text-black hover:border-zinc-200"
@@ -470,9 +468,7 @@ export default function Home() {
                         onClick={() => setSelectedVoice(voice.name)}
                         className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                           selectedVoice === voice.name
-                            ? isDark
-                              ? "border-amber-500 bg-amber-500 text-zinc-900"
-                              : "border-zinc-900 bg-zinc-900 text-white"
+                            ? "border-amber-500 bg-amber-500 text-black"
                             : isDark
                             ? "border-white/20 bg-white/5 text-white hover:border-white/40"
                             : "border-zinc-100 bg-white text-black hover:border-zinc-300"
