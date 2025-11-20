@@ -11,7 +11,8 @@ type Voice = {
 
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000";
+  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  "https://arsalan-joiya-ai-voice-generator-backend.hf.space";
 const MAX_TEXT_LENGTH = 10_000;
 
 function formatVoiceLabel(voice: Voice) {
