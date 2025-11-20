@@ -35,7 +35,7 @@ export default function Home() {
   const [loadingVoices, setLoadingVoices] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [selectedVoice, setSelectedVoice] = useState<string>("");
-  const [text, setText] = useState("hi");
+  const [text, setText] = useState("");
   const [speed, setSpeed] = useState(1);
   const [search, setSearch] = useState("");
   const [isSynthesizing, setIsSynthesizing] = useState(false);
@@ -43,6 +43,10 @@ export default function Home() {
   const [audioDuration, setAudioDuration] = useState<number | null>(null);
   const [synthError, setSynthError] = useState<string | null>(null);
   const [recentVoices, setRecentVoices] = useState<string[]>([]);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const isDark = theme === "dark";
+  const baseTextClass = isDark ? "text-white" : "text-black";
+  const mutedTextClass = isDark ? "text-white/70" : "text-black/60";
 
   useEffect(() => {
     const controller = new AbortController();
@@ -121,6 +125,17 @@ export default function Home() {
     [recentVoices, voices]
   );
 
+  const toggleTheme = () =>
+    setTheme((prev) => (prev === "light" ? "dark" : "light"));
+
+  const primaryPanelClass = `flex w-full flex-1 flex-col rounded-[32px] p-4 shadow-sm sm:p-6 lg:overflow-hidden ${
+    isDark ? "bg-zinc-800 shadow-none" : "bg-white text-black"
+  } ${baseTextClass}`;
+
+  const secondaryPanelClass = `flex w-full flex-col rounded-[32px] p-4 shadow-sm sm:p-6 lg:max-w-md lg:overflow-hidden ${
+    isDark ? "bg-zinc-800 shadow-none" : "bg-white"
+  } ${baseTextClass}`;
+
   const handleGenerate = async () => {
     if (!text.trim()) {
       setSynthError("Please enter some text to synthesize");
@@ -171,62 +186,74 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
-      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-200 bg-white px-4 py-4 sm:px-6">
+    <div
+      className={`min-h-screen transition-colors duration-300 ${
+        isDark ? "bg-zinc-900" : "bg-zinc-100"
+      } ${baseTextClass}`}
+    >
+      <header
+        className={`flex flex-wrap items-center justify-between gap-4 border-b px-4 py-4 transition-colors sm:px-6 ${
+          isDark ? "border-zinc-800 bg-zinc-900" : "border-zinc-200 bg-white"
+        }`}
+      >
         <div className="min-w-[200px]">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-500">
             Creative Platform
           </p>
-          <h1 className="text-lg font-semibold text-zinc-900">AI Voice Studio</h1>
+          <h1 className="text-lg font-semibold">
+            AI Voice Studio
+          </h1>
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-500 sm:gap-3">
-          <button className="rounded-full border border-zinc-200 px-3 py-2 font-medium text-zinc-700 hover:border-zinc-300 sm:px-4">
-            Feedback
-          </button>
-          <button className="rounded-full border border-zinc-200 px-3 py-2 font-medium text-zinc-700 hover:border-zinc-300 sm:px-4">
-            Documentation
-          </button>
-          <div className="flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-2 sm:px-4">
-            <span className="h-8 w-8 rounded-full bg-amber-200" />
-            <span className="font-semibold text-zinc-700">Vbn</span>
-          </div>
-        </div>
+        <button
+          onClick={toggleTheme}
+          className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+            isDark
+              ? "bg-zinc-800 text-white ring-1 ring-zinc-700"
+              : "bg-white text-black ring-1 ring-zinc-200"
+          }`}
+        >
+          {isDark ? "Switch to Light" : "Switch to Dark"}
+        </button>
       </header>
 
       <div className="mx-auto flex w-full flex-col gap-6 px-4 py-6 lg:h-[calc(100vh-88px)] lg:flex-row lg:overflow-hidden lg:px-8">
         <main className="flex flex-1 flex-col gap-6 lg:flex-row lg:overflow-hidden">
-          <section className="flex w-full flex-1 flex-col rounded-[32px] bg-white p-4 shadow-sm sm:p-6 lg:overflow-hidden">
+          <section className={primaryPanelClass}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-rose-500">
                   Playground
                 </p>
-                <h2 className="mt-1 text-2xl font-semibold text-zinc-900">
+                <h2 className="mt-1 text-2xl font-semibold">
                   Text to Speech
                 </h2>
-              </div>
-              <div className="text-right text-xs text-zinc-400">
-                <p>2 / 5,000 characters</p>
-                <p>25,509 credits remaining</p>
               </div>
             </div>
 
             <div className="mt-6 flex-1 overflow-hidden">
-              <div className="flex h-full min-h-[220px] flex-col rounded-3xl border border-transparent bg-zinc-50 p-3 transition focus-within:border-zinc-200 sm:p-4">
+              <div
+                className={`flex h-full min-h-[220px] flex-col rounded-3xl border p-3 transition focus-within:border-zinc-200 sm:p-4 ${
+                  isDark ? "border-zinc-700 bg-zinc-900" : "border-transparent bg-zinc-50"
+                }`}
+              >
                 <textarea
                   value={text}
                   onChange={(event) =>
                     setText(event.target.value.slice(0, MAX_TEXT_LENGTH))
                   }
-                  className="h-full w-full flex-1 resize-none overflow-auto bg-transparent text-base leading-7 text-zinc-800 outline-none sm:text-lg"
+                  className={`h-full w-full flex-1 resize-none overflow-auto bg-transparent text-base leading-7 outline-none sm:text-lg ${baseTextClass} ${
+                    isDark ? "placeholder:text-white/40" : "placeholder:text-black/40"
+                  }`}
                   placeholder="Type or paste the content you want to narrate..."
                 />
               </div>
             </div>
 
-            <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-zinc-500 sm:gap-6">
+            <div className="mt-4 flex flex-wrap items-center gap-4 text-sm sm:gap-6">
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">Speed</p>
+                <p className={`text-xs uppercase tracking-[0.2em] ${mutedTextClass}`}>
+                  Speed
+                </p>
                 <div className="flex items-center gap-2">
                   <input
                     type="range"
@@ -237,30 +264,46 @@ export default function Home() {
                     onChange={(event) =>
                       setSpeed(parseFloat(event.target.value))
                     }
-                    className="w-40 accent-zinc-900"
+                    className={`w-40 ${
+                      isDark ? "accent-amber-400" : "accent-zinc-900"
+                    }`}
                   />
-                  <span className="rounded-full bg-zinc-100 px-2 py-1 text-xs font-semibold text-zinc-700">
+                  <span
+                    className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                      isDark
+                        ? "bg-white/10 text-white"
+                        : "bg-zinc-100 text-black"
+                    }`}
+                  >
                     {speed.toFixed(1)}x
                   </span>
                 </div>
               </div>
               <div className="w-full sm:w-auto">
-                <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">Characters</p>
-                <p className="font-semibold text-zinc-700">
+                <p className={`text-xs uppercase tracking-[0.2em] ${mutedTextClass}`}>
+                  Characters
+                </p>
+                <p className="font-semibold">
                   {text.length} / {MAX_TEXT_LENGTH}
                 </p>
               </div>
               <div className="ml-auto flex w-full justify-end gap-2 sm:w-auto sm:gap-3">
                 <button
                   onClick={() => setText("")}
-                  className="rounded-full border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-700 hover:border-zinc-300 sm:px-5"
+                  className={`rounded-full border px-4 py-2 text-sm font-semibold transition sm:px-5 ${
+                    isDark
+                      ? "border-white/30 text-white hover:border-white/60"
+                      : "border-zinc-200 text-black hover:border-zinc-300"
+                  }`}
                 >
                   Clear
                 </button>
                 <button
                   onClick={handleGenerate}
                   disabled={isSynthesizing}
-                  className="flex items-center gap-2 rounded-full bg-zinc-900 px-5 py-2 text-sm font-semibold text-white transition hover:bg-black disabled:opacity-60 sm:px-6"
+                  className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold text-white transition disabled:opacity-60 sm:px-6 ${
+                    isDark ? "bg-amber-500 hover:bg-amber-600" : "bg-zinc-900 hover:bg-black"
+                  }`}
                 >
                   {isSynthesizing ? "Generating..." : "Generate"}
                 </button>
@@ -268,24 +311,40 @@ export default function Home() {
             </div>
 
             {synthError && (
-              <p className="mt-3 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-600">
+              <p
+                className={`mt-3 rounded-2xl px-4 py-3 text-sm ${
+                  isDark
+                    ? "bg-rose-950/40 text-rose-200"
+                    : "bg-rose-50 text-rose-600"
+                }`}
+              >
                 {synthError}
               </p>
             )}
 
             {audioUrl && (
-              <div className="mt-4 rounded-3xl bg-zinc-50 p-4">
-                <div className="flex flex-wrap items-center gap-4 text-sm text-zinc-600">
-                  <p className="font-semibold text-zinc-900">Preview</p>
+              <div className={`mt-4 rounded-3xl p-4 ${isDark ? "bg-zinc-900" : "bg-zinc-50"}`}>
+                <div className={`flex flex-wrap items-center gap-4 text-sm ${mutedTextClass}`}>
+                  <p className={`font-semibold ${baseTextClass}`}>
+                    Preview
+                  </p>
                   {audioDuration !== null && (
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-zinc-700">
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                        isDark ? "bg-white/10 text-white" : "bg-white text-black"
+                      }`}
+                    >
                       Duration: {formatDuration(audioDuration)}
                     </span>
                   )}
                   <a
                     href={audioUrl}
                     download="kokoro-tts.wav"
-                    className="ml-auto rounded-full border border-zinc-200 px-4 py-1 text-xs font-semibold text-zinc-700 hover:border-zinc-300"
+                    className={`ml-auto rounded-full border px-4 py-1 text-xs font-semibold transition ${
+                      isDark
+                        ? "border-white/30 text-white hover:border-white/60"
+                        : "border-zinc-200 text-black hover:border-zinc-300"
+                    }`}
                   >
                     Download
                   </a>
@@ -295,46 +354,64 @@ export default function Home() {
             )}
           </section>
 
-          <section className="flex w-full flex-col rounded-[32px] bg-white p-4 shadow-sm sm:p-6 lg:max-w-md lg:overflow-hidden">
+          <section className={secondaryPanelClass}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-400">
+                <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${mutedTextClass}`}>
                   Select a voice
                 </p>
-                <h3 className="text-lg font-semibold text-zinc-900">
+                <h3 className="text-lg font-semibold">
                   All saved voices
                 </h3>
               </div>
-              <span className="text-xs text-zinc-400">
+              <span className={`text-xs ${mutedTextClass}`}>
                 {filteredVoices.length} voices
               </span>
             </div>
 
-            <div className="mt-4 rounded-2xl border border-zinc-100 bg-zinc-50">
+            <div
+              className={`mt-4 rounded-2xl border px-4 py-2 ${
+                isDark ? "border-zinc-700 bg-zinc-800" : "border-zinc-100 bg-zinc-50"
+              }`}
+            >
               <input
                 type="text"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search voices..."
-                className="w-full rounded-2xl bg-transparent px-4 py-2 text-sm text-zinc-700 outline-none"
+                className={`w-full rounded-2xl bg-transparent text-sm outline-none ${
+                  isDark ? "placeholder:text-white/40" : "placeholder:text-black/50"
+                }`}
               />
             </div>
-            <div className="mt-4 rounded-2xl border border-zinc-100 bg-zinc-50 px-4 py-3 text-sm text-zinc-500">
-              Device: <span className="font-semibold text-zinc-800">CPU</span>
+            <div
+              className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${
+                isDark ? "border-zinc-700 bg-zinc-800" : "border-zinc-100 bg-zinc-50"
+              }`}
+            >
+              Device: <span className="font-semibold">CPU</span>
             </div>
 
             <div className="mt-4 flex-1 space-y-6 overflow-auto pr-2 max-h-[60vh] lg:max-h-none">
               <div>
-                <div className="mb-2 flex items-center justify-between text-xs text-zinc-500">
+                <div
+                  className={`mb-2 flex items-center justify-between text-xs ${mutedTextClass}`}
+                >
                   <span className="font-semibold uppercase tracking-[0.2em]">
                     Recently used
                   </span>
-                  <button className="text-zinc-400 hover:text-zinc-600">
+                  <button className={`transition ${mutedTextClass} hover:opacity-70`}>
                     View all
                   </button>
                 </div>
                 {recentVoiceDetails.length === 0 ? (
-                  <p className="rounded-2xl bg-zinc-50 px-4 py-3 text-sm text-zinc-400">
+                  <p
+                    className={`rounded-2xl px-4 py-3 text-sm ${
+                      isDark
+                        ? "bg-white/10"
+                        : "bg-zinc-50 text-black"
+                    }`}
+                  >
                     Generate speech to build your recent list.
                   </p>
                 ) : (
@@ -345,15 +422,19 @@ export default function Home() {
                           onClick={() => setSelectedVoice(voice.name)}
                           className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm font-medium transition ${
                             selectedVoice === voice.name
-                              ? "border-zinc-900 bg-zinc-900 text-white"
-                              : "border-transparent bg-zinc-50 text-zinc-700 hover:border-zinc-200"
+                              ? isDark
+                                ? "border-amber-500 bg-amber-500 text-zinc-900"
+                                : "border-zinc-900 bg-zinc-900 text-white"
+                              : isDark
+                              ? "border-white/20 bg-white/5 text-white hover:border-white/40"
+                              : "border-transparent bg-zinc-50 text-black hover:border-zinc-200"
                           }`}
                         >
                           <div>
                             <p>{formatVoiceLabel(voice)}</p>
-                            <p className="text-xs text-zinc-400">{voice.language}</p>
+                            <p className={`text-xs ${mutedTextClass}`}>{voice.language}</p>
                           </div>
-                          <span className="text-xs text-zinc-300">▶</span>
+                          <span className={`text-xs ${mutedTextClass}`}>▶</span>
                         </button>
                       </li>
                     ))}
@@ -362,14 +443,22 @@ export default function Home() {
               </div>
 
               <div>
-                <div className="mb-2 flex items-center justify-between text-xs text-zinc-500">
+                <div
+                  className={`mb-2 flex items-center justify-between text-xs ${mutedTextClass}`}
+                >
                   <span className="font-semibold uppercase tracking-[0.2em]">
                     All voices
                   </span>
                   <span>{loadingVoices ? "Loading..." : "View all"}</span>
                 </div>
                 {fetchError && (
-                  <p className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-600">
+                  <p
+                    className={`rounded-2xl px-4 py-3 text-sm ${
+                      isDark
+                        ? "bg-rose-950/40 text-rose-200"
+                        : "bg-rose-50 text-rose-600"
+                    }`}
+                  >
                     {fetchError}
                   </p>
                 )}
@@ -380,17 +469,21 @@ export default function Home() {
                         onClick={() => setSelectedVoice(voice.name)}
                         className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                           selectedVoice === voice.name
-                            ? "border-zinc-900 bg-zinc-900 text-white"
-                            : "border-zinc-100 bg-white hover:border-zinc-300"
+                            ? isDark
+                              ? "border-amber-500 bg-amber-500 text-zinc-900"
+                              : "border-zinc-900 bg-zinc-900 text-white"
+                            : isDark
+                            ? "border-white/20 bg-white/5 text-white hover:border-white/40"
+                            : "border-zinc-100 bg-white text-black hover:border-zinc-300"
                         }`}
                       >
                         <div>
                           <p className="font-semibold">
                             {formatVoiceLabel(voice)}
                           </p>
-                          <p className="text-xs text-zinc-400">{voice.language}</p>
+                          <p className={`text-xs ${mutedTextClass}`}>{voice.language}</p>
                         </div>
-                        <span className="text-xs text-zinc-300">▶</span>
+                        <span className={`text-xs ${mutedTextClass}`}>▶</span>
                       </button>
                     </li>
                   ))}
