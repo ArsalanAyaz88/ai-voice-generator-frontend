@@ -145,17 +145,17 @@ export default function Home() {
   const toggleTheme = () =>
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
 
-  const primaryPanelClass = `flex w-full flex-1 flex-col rounded-[32px] p-4 shadow-sm sm:p-6 lg:overflow-hidden ${
+  const primaryPanelClass = `flex w-full flex-col rounded-[32px] p-4 shadow-sm sm:p-6 lg:overflow-hidden ${
     isDark ? "bg-zinc-800 shadow-none" : "bg-white text-black"
-  } ${baseTextClass}`;
+  } ${baseTextClass} lg:flex-[2]`;
 
-  const audioPanelClass = `flex w-full flex-1 flex-col rounded-[32px] p-4 shadow-sm sm:p-6 lg:overflow-hidden ${
+  const audioPanelClass = `flex w-full flex-col rounded-[32px] p-4 shadow-sm sm:p-6 lg:overflow-hidden ${
     isDark ? "bg-zinc-800 shadow-none" : "bg-white"
-  } ${baseTextClass}`;
+  } ${baseTextClass} lg:flex-[1]`;
 
-  const secondaryPanelClass = `flex w-full flex-1 flex-col rounded-[32px] p-4 shadow-sm sm:p-6 lg:overflow-hidden ${
+  const secondaryPanelClass = `flex w-full flex-col rounded-[32px] p-4 shadow-sm sm:p-6 lg:overflow-hidden ${
     isDark ? "bg-zinc-800 shadow-none" : "bg-white"
-  } ${baseTextClass}`;
+  } ${baseTextClass} lg:flex-[1]`;
 
   const handleGenerate = async () => {
     if (!text.trim()) {
@@ -354,10 +354,12 @@ export default function Home() {
                 </div>
               </div>
               <div className="w-full sm:w-auto">
-                <p className={`text-xs uppercase tracking-[0.2em] ${mutedTextClass}`}>
-                  Characters
-                </p>
-                <p className="font-semibold">{text.length}</p>
+                <div className="flex items-baseline gap-2">
+                  <p className={`text-xs uppercase tracking-[0.2em] ${mutedTextClass}`}>
+                    Characters
+                  </p>
+                  <p className="text-sm font-semibold">{text.length}</p>
+                </div>
                 <p className={`mt-1 text-xs ${mutedTextClass}`}>
                   Long text is automatically split into multiple audio parts.
                 </p>
@@ -483,13 +485,6 @@ export default function Home() {
                   isDark ? "placeholder:text-white/40" : "placeholder:text-black/50"
                 }`}
               />
-            </div>
-            <div
-              className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${
-                isDark ? "border-zinc-700 bg-zinc-800" : "border-zinc-100 bg-zinc-50"
-              }`}
-            >
-              Device: <span className="font-semibold">CPU</span>
             </div>
 
             <div className="mt-4 flex-1 space-y-6 overflow-auto pr-2 max-h-[60vh] lg:max-h-none">
