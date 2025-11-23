@@ -12,8 +12,9 @@ type Voice = {
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ??
-  "https://arsalan-joiya-ai-voice-generator-backend.hf.space";
-const MAX_TEXT_LENGTH = 10_000;
+  "http://localhost:8000";
+// const API_BASE_URL_HF =
+//   "https://arsalan-joiya-ai-voice-generator-backend.hf.space";
 
 function formatVoiceLabel(voice: Voice) {
   return voice.name
@@ -243,9 +244,7 @@ export default function Home() {
               >
                 <textarea
                   value={text}
-                  onChange={(event) =>
-                    setText(event.target.value.slice(0, MAX_TEXT_LENGTH))
-                  }
+                  onChange={(event) => setText(event.target.value)}
                   className={`h-full w-full flex-1 resize-none overflow-auto bg-transparent text-base leading-7 outline-none sm:text-lg ${baseTextClass} ${
                     isDark ? "placeholder:text-white/40" : "placeholder:text-black/40"
                   }`}
@@ -288,9 +287,7 @@ export default function Home() {
                 <p className={`text-xs uppercase tracking-[0.2em] ${mutedTextClass}`}>
                   Characters
                 </p>
-                <p className="font-semibold">
-                  {text.length} / {MAX_TEXT_LENGTH}
-                </p>
+                <p className="font-semibold">{text.length}</p>
               </div>
               <div className="ml-auto flex w-full justify-end gap-2 sm:w-auto sm:gap-3">
                 <button
