@@ -7,6 +7,11 @@ type Voice = {
   language: string;
 };
 
+type AudioPart = {
+  id: number;
+  url: string;
+  label: string;
+};
 
 
 
@@ -14,6 +19,7 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ??
   "https://arsalan-joiya-ai-voice-generator-backend.hf.space";
 const MAX_TEXT_LENGTH = 5_000;
+const CHARS_PER_PART = 1_500;
 
 function formatVoiceLabel(voice: Voice) {
   return voice.name
@@ -31,6 +37,43 @@ function formatDuration(seconds: number) {
   return `${mins}:${secs}`;
 }
 
+function splitTextIntoChunks(text: string, maxChars: number): string[] {
+  const paragraphs = text
+    .split(/\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  const chunks: string[] = [];
+  let current = "";
+
+  for (const para of paragraphs) {
+    const candidate = current ? `${current}\n${para}` : para;
+
+    if (candidate.length <= maxChars) {
+      current = candidate;
+    } else {
+      if (current) {
+        chunks.push(current);
+        current = "";
+      }
+
+      if (para.length <= maxChars) {
+        current = para;
+      } else {
+        for (let i = 0; i < para.length; i += maxChars) {
+          chunks.push(para.slice(i, i + maxChars));
+        }
+      }
+    }
+  }
+
+  if (current) {
+    chunks.push(current);
+  }
+
+  return chunks;
+}
+
 export default function Home() {
   const [voices, setVoices] = useState<Voice[]>([]);
   const [loadingVoices, setLoadingVoices] = useState(true);
@@ -40,8 +83,7 @@ export default function Home() {
   const [speed, setSpeed] = useState(1);
   const [search, setSearch] = useState("");
   const [isSynthesizing, setIsSynthesizing] = useState(false);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [audioDuration, setAudioDuration] = useState<number | null>(null);
+  const [audioParts, setAudioParts] = useState<AudioPart[]>([]);
   const [synthError, setSynthError] = useState<string | null>(null);
   const [recentVoices, setRecentVoices] = useState<string[]>([]);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
@@ -84,29 +126,11 @@ export default function Home() {
 
   useEffect(() => {
     return () => {
-      if (audioUrl) {
-        URL.revokeObjectURL(audioUrl);
-      }
+      audioParts.forEach((part) => {
+        URL.revokeObjectURL(part.url);
+      });
     };
-  }, [audioUrl]);
-
-  useEffect(() => {
-    if (!audioUrl) {
-      setAudioDuration(null);
-      return;
-    }
-    const audio = new Audio(audioUrl);
-    const handleLoaded = () => {
-      if (!Number.isNaN(audio.duration)) {
-        setAudioDuration(audio.duration);
-      }
-    };
-    audio.addEventListener("loadedmetadata", handleLoaded);
-    audio.load();
-    return () => {
-      audio.removeEventListener("loadedmetadata", handleLoaded);
-    };
-  }, [audioUrl]);
+  }, [audioParts]);
 
   const filteredVoices = useMemo(() => {
     if (!search.trim()) return voices;
@@ -147,33 +171,59 @@ export default function Home() {
       return;
     }
 
+    const trimmedText = text.trim();
+    const chunks = splitTextIntoChunks(trimmedText, CHARS_PER_PART);
+
+    if (chunks.length === 0) {
+      setSynthError("Please enter some text to synthesize");
+      return;
+    }
+
+    setAudioParts((prev) => {
+      prev.forEach((part) => URL.revokeObjectURL(part.url));
+      return [];
+    });
+
     setSynthError(null);
     setIsSynthesizing(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/synthesize`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text,
-          voice: selectedVoice,
-          speed,
-          device: "cpu",
-          return_phonemes: false,
-        }),
-      });
+      const generatedParts: AudioPart[] = [];
 
-      if (!response.ok) {
-        const detail = await response.text();
-        throw new Error(detail || "Failed to synthesize speech");
+      for (let index = 0; index < chunks.length; index += 1) {
+        const partText = chunks[index];
+
+        const response = await fetch(`${API_BASE_URL}/synthesize`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: partText,
+            voice: selectedVoice,
+            speed,
+            device: "cpu",
+            return_phonemes: false,
+          }),
+        });
+
+        if (!response.ok) {
+          const detail = await response.text();
+          throw new Error(
+            detail
+              ? `Part ${index + 1}: ${detail}`
+              : `Failed to synthesize speech for part ${index + 1}`
+          );
+        }
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+
+        generatedParts.push({
+          id: Date.now() + index,
+          url,
+          label: `Part ${index + 1}`,
+        });
       }
 
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-
-      setAudioUrl((prev) => {
-        if (prev) URL.revokeObjectURL(prev);
-        return url;
-      });
+      setAudioParts(generatedParts);
 
       setRecentVoices((prev) => {
         const updated = [selectedVoice, ...prev.filter((v) => v !== selectedVoice)];
@@ -325,34 +375,45 @@ export default function Home() {
               </p>
             )}
 
-            {audioUrl && (
-              <div className={`mt-4 rounded-3xl p-4 ${isDark ? "bg-zinc-900" : "bg-zinc-50"}`}>
-                <div className={`flex flex-wrap items-center gap-4 text-sm ${mutedTextClass}`}>
-                  <p className={`font-semibold ${baseTextClass}`}>
-                    Preview
-                  </p>
-                  {audioDuration !== null && (
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        isDark ? "bg-white/10 text-white" : "bg-white text-black"
+            {audioParts.length > 0 && (
+              <div
+                className={`mt-4 rounded-3xl p-4 ${
+                  isDark ? "bg-zinc-900" : "bg-zinc-50"
+                }`}
+              >
+                <p className={`font-semibold ${baseTextClass}`}>
+                  Generated Parts
+                </p>
+                <ul className="mt-3 space-y-3">
+                  {audioParts.map((part, index) => (
+                    <li
+                      key={part.id}
+                      className={`rounded-2xl border p-3 ${
+                        isDark
+                          ? "border-zinc-700 bg-zinc-900"
+                          : "border-zinc-200 bg-white"
                       }`}
                     >
-                      Duration: {formatDuration(audioDuration)}
-                    </span>
-                  )}
-                  <a
-                    href={audioUrl}
-                    download="kokoro-tts.wav"
-                    className={`ml-auto rounded-full border px-4 py-1 text-xs font-semibold transition ${
-                      isDark
-                        ? "border-white/30 text-white hover:border-white/60"
-                        : "border-zinc-200 text-black hover:border-zinc-300"
-                    }`}
-                  >
-                    Download
-                  </a>
-                </div>
-                <audio className="mt-3 w-full" controls src={audioUrl} />
+                      <div className="flex items-center justify-between gap-3 text-sm">
+                        <span className={`font-semibold ${baseTextClass}`}>
+                          Part {index + 1}
+                        </span>
+                        <a
+                          href={part.url}
+                          download={`voice-part-${index + 1}.wav`}
+                          className={`rounded-full border px-4 py-1 text-xs font-semibold transition ${
+                            isDark
+                              ? "border-white/30 text-white hover:border-white/60"
+                              : "border-zinc-200 text-black hover:border-zinc-300"
+                          }`}
+                        >
+                          Download
+                        </a>
+                      </div>
+                      <audio className="mt-2 w-full" controls src={part.url} />
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
           </section>
