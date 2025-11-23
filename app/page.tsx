@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import JSZip from "jszip";
 
 type Voice = {
   name: string;
@@ -228,15 +229,32 @@ export default function Home() {
     }
   };
 
-  const handleDownloadAll = () => {
-    audioParts.forEach((part, index) => {
-      const link = document.createElement("a");
-      link.href = part.url;
-      link.download = `voice-part-${index + 1}.wav`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    });
+  const handleDownloadAll = async () => {
+    if (audioParts.length === 0) return;
+
+    const zip = new JSZip();
+
+    await Promise.all(
+      audioParts.map(async (part, index) => {
+        const response = await fetch(part.url);
+        const blob = await response.blob();
+        zip.file(`voice-part-${index + 1}.wav`, blob);
+      })
+    );
+
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(zipBlob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `voice-parts-${new Date()
+      .toISOString()
+      .replace(/[:.]/g, "-")}.zip`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -397,7 +415,7 @@ export default function Home() {
                     Download all
                   </button>
                 </div>
-                <ul className="mt-3 space-y-3">
+                <ul className="mt-3 max-h-[40vh] space-y-3 overflow-auto pr-1">
                   {audioParts.map((part, index) => (
                     <li
                       key={part.id}
