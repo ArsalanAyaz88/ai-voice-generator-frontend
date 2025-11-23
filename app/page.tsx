@@ -169,10 +169,14 @@ export default function Home() {
 
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
-      setAudioUrl((prev) => {
-        if (prev) URL.revokeObjectURL(prev);
-        return url;
-      });
+
+      // Automatically trigger download of the generated audio (no player)
+      const downloadLink = document.createElement("a");
+      downloadLink.href = url;
+      downloadLink.download = `voice-${Date.now()}.wav`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
       setRecentVoices((prev) => {
         const updated = [selectedVoice, ...prev.filter((v) => v !== selectedVoice)];
         return updated.slice(0, 5);
