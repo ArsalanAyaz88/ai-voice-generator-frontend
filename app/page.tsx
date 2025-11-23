@@ -18,7 +18,6 @@ type AudioPart = {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ??
   "https://arsalan-joiya-ai-voice-generator-backend.hf.space";
-const MAX_TEXT_LENGTH = 5_000;
 const CHARS_PER_PART = 1_500;
 
 function formatVoiceLabel(voice: Voice) {
@@ -124,14 +123,6 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    return () => {
-      audioParts.forEach((part) => {
-        URL.revokeObjectURL(part.url);
-      });
-    };
-  }, [audioParts]);
-
   const filteredVoices = useMemo(() => {
     if (!search.trim()) return voices;
     const query = search.toLowerCase();
@@ -187,8 +178,6 @@ export default function Home() {
     setSynthError(null);
     setIsSynthesizing(true);
     try {
-      const generatedParts: AudioPart[] = [];
-
       for (let index = 0; index < chunks.length; index += 1) {
         const partText = chunks[index];
 
@@ -216,14 +205,15 @@ export default function Home() {
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
 
-        generatedParts.push({
-          id: Date.now() + index,
-          url,
-          label: `Part ${index + 1}`,
-        });
+        setAudioParts((prev) => [
+          ...prev,
+          {
+            id: Date.now() + index,
+            url,
+            label: `Part ${index + 1}`,
+          },
+        ]);
       }
-
-      setAudioParts(generatedParts);
 
       setRecentVoices((prev) => {
         const updated = [selectedVoice, ...prev.filter((v) => v !== selectedVoice)];
@@ -236,6 +226,17 @@ export default function Home() {
     } finally {
       setIsSynthesizing(false);
     }
+  };
+
+  const handleDownloadAll = () => {
+    audioParts.forEach((part, index) => {
+      const link = document.createElement("a");
+      link.href = part.url;
+      link.download = `voice-part-${index + 1}.wav`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
   };
 
   return (
@@ -291,9 +292,7 @@ export default function Home() {
               >
                 <textarea
                   value={text}
-                  onChange={(event) =>
-                    setText(event.target.value.slice(0, MAX_TEXT_LENGTH))
-                  }
+                  onChange={(event) => setText(event.target.value)}
                   className={`h-full w-full flex-1 resize-none overflow-auto bg-transparent text-base leading-7 outline-none sm:text-lg ${baseTextClass} ${
                     isDark ? "placeholder:text-white/40" : "placeholder:text-black/40"
                   }`}
@@ -336,8 +335,9 @@ export default function Home() {
                 <p className={`text-xs uppercase tracking-[0.2em] ${mutedTextClass}`}>
                   Characters
                 </p>
-                <p className="font-semibold">
-                  {text.length} / {MAX_TEXT_LENGTH}
+                <p className="font-semibold">{text.length}</p>
+                <p className={`mt-1 text-xs ${mutedTextClass}`}>
+                  Long text is automatically split into multiple audio parts.
                 </p>
               </div>
               <div className="ml-auto flex w-full justify-end gap-2 sm:w-auto sm:gap-3">
@@ -381,9 +381,22 @@ export default function Home() {
                   isDark ? "bg-zinc-900" : "bg-zinc-50"
                 }`}
               >
-                <p className={`font-semibold ${baseTextClass}`}>
-                  Generated Parts
-                </p>
+                <div className="flex items-center justify-between gap-3">
+                  <p className={`font-semibold ${baseTextClass}`}>
+                    Generated Parts
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleDownloadAll}
+                    className={`rounded-full border px-4 py-1 text-xs font-semibold transition ${
+                      isDark
+                        ? "border-white/30 text-white hover:border-white/60"
+                        : "border-zinc-200 text-black hover:border-zinc-300"
+                    }`}
+                  >
+                    Download all
+                  </button>
+                </div>
                 <ul className="mt-3 space-y-3">
                   {audioParts.map((part, index) => (
                     <li
