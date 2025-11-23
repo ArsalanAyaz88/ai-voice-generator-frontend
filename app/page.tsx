@@ -149,7 +149,11 @@ export default function Home() {
     isDark ? "bg-zinc-800 shadow-none" : "bg-white text-black"
   } ${baseTextClass}`;
 
-  const secondaryPanelClass = `flex w-full flex-col rounded-[32px] p-4 shadow-sm sm:p-6 lg:max-w-md lg:overflow-hidden ${
+  const audioPanelClass = `flex w-full flex-1 flex-col rounded-[32px] p-4 shadow-sm sm:p-6 lg:overflow-hidden ${
+    isDark ? "bg-zinc-800 shadow-none" : "bg-white"
+  } ${baseTextClass}`;
+
+  const secondaryPanelClass = `flex w-full flex-1 flex-col rounded-[32px] p-4 shadow-sm sm:p-6 lg:overflow-hidden ${
     isDark ? "bg-zinc-800 shadow-none" : "bg-white"
   } ${baseTextClass}`;
 
@@ -392,10 +396,11 @@ export default function Home() {
                 {synthError}
               </p>
             )}
-
-            {audioParts.length > 0 && (
+          </section>
+          {audioParts.length > 0 && (
+            <section className={audioPanelClass}>
               <div
-                className={`mt-4 rounded-3xl p-4 ${
+                className={`rounded-3xl p-4 ${
                   isDark ? "bg-zinc-900" : "bg-zinc-50"
                 }`}
               >
@@ -446,8 +451,8 @@ export default function Home() {
                   ))}
                 </ul>
               </div>
-            )}
-          </section>
+            </section>
+          )}
 
           <section className={secondaryPanelClass}>
             <div className="flex items-center justify-between">
