@@ -293,7 +293,7 @@ export default function Home() {
       </header>
 
       <div className="mx-auto flex w-full flex-col gap-6 px-4 py-6 lg:h-[calc(100vh-88px)] lg:flex-row lg:overflow-hidden lg:px-8">
-        <main className="flex flex-1 flex-col gap-6 lg:flex-row lg:overflow-hidden">
+        <main className="flex flex-1 flex-col gap-6 lg:flex-row lg:items-stretch lg:overflow-hidden">
           <section className={primaryPanelClass}>
             <div className="flex items-center justify-between">
               <div>
@@ -402,7 +402,7 @@ export default function Home() {
           {audioParts.length > 0 && (
             <section className={audioPanelClass}>
               <div
-                className={`rounded-3xl p-4 ${
+                className={`flex h-full flex-col rounded-3xl p-4 ${
                   isDark ? "bg-zinc-900" : "bg-zinc-50"
                 }`}
               >
@@ -422,7 +422,7 @@ export default function Home() {
                     Download all
                   </button>
                 </div>
-                <ul className="mt-3 max-h-[40vh] space-y-3 overflow-auto pr-1">
+                <ul className="mt-3 flex-1 space-y-3 overflow-auto pr-1">
                   {audioParts.map((part, index) => (
                     <li
                       key={part.id}
