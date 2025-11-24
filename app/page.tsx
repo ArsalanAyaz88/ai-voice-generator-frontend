@@ -87,6 +87,7 @@ export default function Home() {
   const [synthError, setSynthError] = useState<string | null>(null);
   const [recentVoices, setRecentVoices] = useState<string[]>([]);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
   const isDark = theme === "dark";
   const baseTextClass = isDark ? "text-white" : "text-black";
   const mutedTextClass = isDark ? "text-white/70" : "text-black/60";
@@ -182,8 +183,16 @@ export default function Home() {
 
     setSynthError(null);
     setIsSynthesizing(true);
+    
+    const controller = new AbortController();
+    setAbortController(controller);
+    
     try {
       for (let index = 0; index < chunks.length; index += 1) {
+        if (controller.signal.aborted) {
+          throw new Error("Generation stopped by user");
+        }
+        
         const partText = chunks[index];
 
         const response = await fetch(`${API_BASE_URL}/synthesize`, {
@@ -196,6 +205,7 @@ export default function Home() {
             device: "cpu",
             return_phonemes: false,
           }),
+          signal: controller.signal,
         });
 
         if (!response.ok) {
@@ -225,11 +235,23 @@ export default function Home() {
         return updated.slice(0, 5);
       });
     } catch (error) {
-      setSynthError(
-        error instanceof Error ? error.message : "Unable to generate speech"
-      );
+      if (controller.signal.aborted) {
+        setSynthError("Audio generation stopped");
+      } else {
+        setSynthError(
+          error instanceof Error ? error.message : "Unable to generate speech"
+        );
+      }
     } finally {
       setIsSynthesizing(false);
+      setAbortController(null);
+    }
+  };
+
+  const handleStop = () => {
+    if (abortController) {
+      abortController.abort();
+      setAbortController(null);
     }
   };
 
@@ -315,9 +337,10 @@ export default function Home() {
                 <textarea
                   value={text}
                   onChange={(event) => setText(event.target.value)}
+                  disabled={isSynthesizing}
                   className={`h-full w-full flex-1 resize-none overflow-auto bg-transparent text-base leading-7 outline-none sm:text-lg ${baseTextClass} ${
                     isDark ? "placeholder:text-white/40" : "placeholder:text-black/40"
-                  }`}
+                  } ${isSynthesizing ? "cursor-not-allowed opacity-60" : ""}`}
                   placeholder="Type or paste the content you want to narrate..."
                 />
               </div>
@@ -338,9 +361,10 @@ export default function Home() {
                     onChange={(event) =>
                       setSpeed(parseFloat(event.target.value))
                     }
+                    disabled={isSynthesizing}
                     className={`w-40 ${
                       isDark ? "accent-amber-400" : "accent-zinc-900"
-                    }`}
+                    } ${isSynthesizing ? "opacity-40 cursor-not-allowed" : ""}`}
                   />
                   <span
                     className={`rounded-full px-2 py-1 text-xs font-semibold ${
@@ -361,29 +385,41 @@ export default function Home() {
                   <p className="text-sm font-semibold">{text.length}</p>
                 </div>
                 <p className={`mt-1 text-xs ${mutedTextClass}`}>
-                  Long text is automatically split into multiple audio parts.
+                  Unlimited text support. Long text is automatically split into multiple audio parts.
                 </p>
               </div>
               <div className="ml-auto flex w-full justify-end gap-2 sm:w-auto sm:gap-3">
                 <button
                   onClick={() => setText("")}
+                  disabled={isSynthesizing}
                   className={`rounded-full border px-4 py-2 text-sm font-semibold transition sm:px-5 ${
                     isDark
-                      ? "border-white/30 text-white hover:border-white/60"
-                      : "border-zinc-200 text-black hover:border-zinc-300"
+                      ? "border-white/30 text-white hover:border-white/60 disabled:opacity-40 disabled:cursor-not-allowed"
+                      : "border-zinc-200 text-black hover:border-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed"
                   }`}
                 >
                   Clear
                 </button>
-                <button
-                  onClick={handleGenerate}
-                  disabled={isSynthesizing}
-                  className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold text-white transition disabled:opacity-60 sm:px-6 ${
-                    isDark ? "bg-amber-500 hover:bg-amber-600" : "bg-zinc-900 hover:bg-black"
-                  }`}
-                >
-                  {isSynthesizing ? "Generating..." : "Generate"}
-                </button>
+                {isSynthesizing ? (
+                  <button
+                    onClick={handleStop}
+                    className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold text-white transition sm:px-6 ${
+                      isDark ? "bg-red-600 hover:bg-red-700" : "bg-red-500 hover:bg-red-600"
+                    }`}
+                  >
+                    Stop
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleGenerate}
+                    disabled={isSynthesizing}
+                    className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold text-white transition disabled:opacity-60 sm:px-6 ${
+                      isDark ? "bg-amber-500 hover:bg-amber-600" : "bg-zinc-900 hover:bg-black"
+                    }`}
+                  >
+                    Generate
+                  </button>
+                )}
               </div>
             </div>
 
@@ -515,13 +551,14 @@ export default function Home() {
                       <li key={voice.name}>
                         <button
                           onClick={() => setSelectedVoice(voice.name)}
+                          disabled={isSynthesizing}
                           className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm font-medium transition ${
                             selectedVoice === voice.name
                               ? "border-amber-500 bg-amber-500 text-black"
                               : isDark
                               ? "border-white/20 bg-white/5 text-white hover:border-white/40"
                               : "border-transparent bg-zinc-50 text-black hover:border-zinc-200"
-                          }`}
+                          } ${isSynthesizing ? "cursor-not-allowed opacity-40" : ""}`}
                         >
                           <div>
                             <p>{formatVoiceLabel(voice)}</p>
@@ -560,13 +597,14 @@ export default function Home() {
                     <li key={voice.name}>
                       <button
                         onClick={() => setSelectedVoice(voice.name)}
+                        disabled={isSynthesizing}
                         className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                           selectedVoice === voice.name
                             ? "border-amber-500 bg-amber-500 text-black"
                             : isDark
                             ? "border-white/20 bg-white/5 text-white hover:border-white/40"
                             : "border-zinc-100 bg-white text-black hover:border-zinc-300"
-                        }`}
+                        } ${isSynthesizing ? "cursor-not-allowed opacity-40" : ""}`}
                       >
                         <div>
                           <p className="font-semibold">
