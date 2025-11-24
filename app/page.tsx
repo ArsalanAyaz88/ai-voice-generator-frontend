@@ -19,7 +19,7 @@ type AudioPart = {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ??
   "https://arsalan-joiya-ai-voice-generator-backend.hf.space";
-const CHARS_PER_PART = 1_500;
+const CHARS_PER_PART = 900;
 
 function formatVoiceLabel(voice: Voice) {
   return voice.name
@@ -50,6 +50,7 @@ function splitTextIntoChunks(text: string, maxChars: number): string[] {
     const candidate = current ? `${current}\n${para}` : para;
 
     if (candidate.length <= maxChars) {
+      // Safe to join whole paragraph into the current chunk
       current = candidate;
     } else {
       if (current) {
@@ -58,10 +59,42 @@ function splitTextIntoChunks(text: string, maxChars: number): string[] {
       }
 
       if (para.length <= maxChars) {
+        // Paragraph itself fits into a single chunk
         current = para;
       } else {
-        for (let i = 0; i < para.length; i += maxChars) {
-          chunks.push(para.slice(i, i + maxChars));
+        // Paragraph is longer than maxChars; split by whole words
+        const words = para.split(/\s+/);
+        let part = "";
+
+        for (const word of words) {
+          const next = part ? `${part} ${word}` : word;
+
+          if (next.length <= maxChars) {
+            part = next;
+          } else {
+            if (part) {
+              chunks.push(part);
+            }
+            // Start a new chunk with the current word. If a single word
+            // is longer than maxChars, fall back to slicing that word
+            // so that the loop still makes progress.
+            if (word.length <= maxChars) {
+              part = word;
+            } else {
+              for (let i = 0; i < word.length; i += maxChars) {
+                const slice = word.slice(i, i + maxChars);
+                if (slice.length === maxChars || i === 0) {
+                  chunks.push(slice);
+                } else {
+                  part = slice;
+                }
+              }
+            }
+          }
+        }
+
+        if (part) {
+          chunks.push(part);
         }
       }
     }
