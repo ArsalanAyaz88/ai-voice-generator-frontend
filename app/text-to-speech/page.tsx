@@ -242,17 +242,7 @@ export default function TextToSpeech() {
       }
 
       setPreviewLoading(voiceName);
-      const response = await fetch(`${API_BASE_URL}/synthesize`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: "This is a sample preview of this voice.",
-          voice: voiceName,
-          speed: 1,
-          device: "cpu",
-          return_phonemes: false,
-        }),
-      });
+      const response = await fetch(`${API_BASE_URL}/preview/${encodeURIComponent(voiceName)}`);
       if (!response.ok) {
         throw new Error(await response.text());
       }
